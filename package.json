@@ -1,0 +1,27 @@
+{
+  "name": "quiz",
+  "version": "1.0.0",
+  "description": "A simple quiz app",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewgryan/quiz.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/andrewgryan/quiz/issues"
+  },
+  "homepage": "https://github.com/andrewgryan/quiz#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.3.1",
+    "postcss": "^8.3.6",
+    "tailwindcss": "^2.2.7",
+    "vite": "^2.5.0"
+  }
+}
