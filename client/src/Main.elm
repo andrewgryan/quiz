@@ -1,7 +1,10 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, text)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
+import Http
 
 
 
@@ -21,34 +24,45 @@ main =
 -- MODEL
 
 
-type alias Model =
-    Int
-
-
-
--- MSG
-
-
-type Msg
-    = NoOp
-
-
-
--- INIT
+type Model
+    = NotStarted
+    | Loading
+    | Success String
+    | Failed
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( 0, Cmd.none )
+    ( NotStarted, Cmd.none )
 
 
 
 -- UPDATE
 
 
+type Msg
+    = Clicked
+    | GotText (Result Http.Error String)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        Clicked ->
+            ( Loading
+            , Http.get
+                { url = "/api"
+                , expect = Http.expectString GotText
+                }
+            )
+
+        GotText result ->
+            case result of
+                Ok text ->
+                    ( Success text, Cmd.none )
+
+                Err _ ->
+                    ( Failed, Cmd.none )
 
 
 
@@ -66,4 +80,24 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    text "Hello, Elm!"
+    case model of
+        Success str ->
+            div []
+                [ viewButton
+                , div [] [ text str ]
+                ]
+
+        _ ->
+            viewButton
+
+
+viewButton : Html Msg
+viewButton =
+    div
+        [ class "bg-blue-200"
+        , class "rounded"
+        , class "p-2"
+        , onClick Clicked
+        ]
+        [ text "Hello, Elm!"
+        ]
