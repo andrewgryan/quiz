@@ -7,10 +7,17 @@
     </head>
     <body>
         <div class="flex flex-row justify-center items-center h-screen bg-gray-200">
-            <h1 class="uppercase">Quiz</h1>
+            <div id="go" class="uppercase px-8 py-4 cursor-pointer bg-green-500 rounded shadow text-white">Quiz</div>
         </div>
         <script type="module">
             import "./style.css"
+
+            let el = document.getElementById("go")
+            el.addEventListener("click", () => {
+                fetch("/api")
+                    .then(response => response.text())
+                    .then(console.log)
+            })
         </script>
     </body>
 </html>
