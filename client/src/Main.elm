@@ -6,6 +6,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode exposing (Decoder, field, list, map, oneOf, string)
+import Json.Encode
 
 
 
@@ -62,6 +63,20 @@ decoderAnswer =
         ]
 
 
+encode : Answer -> Json.Encode.Value
+encode answer =
+    case answer of
+        Right str ->
+            Json.Encode.object
+                [ ( "Right", Json.Encode.string str )
+                ]
+
+        Wrong str ->
+            Json.Encode.object
+                [ ( "Wrong", Json.Encode.string str )
+                ]
+
+
 
 -- UPDATE
 
@@ -69,7 +84,8 @@ decoderAnswer =
 type Msg
     = Clicked
     | GotQuestion (Result Http.Error Question)
-    | GotAnswer
+    | GotAnswer Answer
+    | GotPostResponse (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -91,8 +107,18 @@ update msg model =
                 Err _ ->
                     ( Failed, Cmd.none )
 
-        GotAnswer ->
-            ( Success Answered, Cmd.none )
+        GotAnswer answer ->
+            ( Success Answered
+            , Http.post
+                { url = "/answer"
+                , body = Http.jsonBody (encode answer)
+                , expect = Http.expectString GotPostResponse
+                }
+            )
+
+        GotPostResponse _ ->
+            -- TODO handle response from POST to /answer
+            ( model, Cmd.none )
 
 
 
@@ -156,6 +182,10 @@ viewQuestion question =
 
 viewAnswer : Answer -> Html Msg
 viewAnswer answer =
+    let
+        toMsg =
+            GotAnswer answer
+    in
     case answer of
         Right str ->
             div
@@ -163,7 +193,7 @@ viewAnswer answer =
                 , class "bg-gray-100"
                 , class "text-gray-900"
                 , class "shadow-lg"
-                , onClick GotAnswer
+                , onClick toMsg
                 ]
                 [ text str ]
 
@@ -173,7 +203,7 @@ viewAnswer answer =
                 , class "bg-gray-100"
                 , class "text-gray-900"
                 , class "shadow-lg"
-                , onClick GotAnswer
+                , onClick toMsg
                 ]
                 [ text str ]
 
