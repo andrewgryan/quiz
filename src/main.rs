@@ -1,9 +1,22 @@
 #[macro_use] extern crate rocket;
 
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+use rocket::State;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
 use rocket::fs::FileServer;
+
+
+
+struct Score {
+    count: AtomicUsize
+}
+
+#[derive(Serialize)]
+struct Board {
+    score : usize
+}
 
 
 #[derive(Serialize)]
@@ -35,12 +48,18 @@ fn question() -> Json<Question> {
 
 
 #[post("/answer", format = "application/json", data = "<data>")]
-fn answer(data: Json<Answer>) {
+fn answer(data: Json<Answer>, score: &State<Score>) -> Json<Board> {
     println!("{:?}", data.into_inner());
+
+    let score = score.count.fetch_add(1, Ordering::Relaxed);
+
+    Json(Board { score })
 }
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![question, answer])
+    rocket::build()
+        .mount("/", routes![question, answer])
         .mount("/", FileServer::from("client/dist"))
+        .manage(Score { count: AtomicUsize::new(0) })
 }
