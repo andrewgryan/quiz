@@ -39,6 +39,7 @@ init _ =
 
 type Question
     = Question String (List Answer)
+    | Answered
 
 
 type Answer
@@ -68,6 +69,7 @@ decoderAnswer =
 type Msg
     = Clicked
     | GotQuestion (Result Http.Error Question)
+    | GotAnswer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -88,6 +90,9 @@ update msg model =
 
                 Err _ ->
                     ( Failed, Cmd.none )
+
+        GotAnswer ->
+            ( Success Answered, Cmd.none )
 
 
 
@@ -130,21 +135,47 @@ viewPage content =
 
 
 viewQuestion : Question -> Html Msg
-viewQuestion (Question statement answers) =
-    div []
-        [ div [] [ text statement ]
-        , div [] (List.map viewAnswer answers)
-        ]
+viewQuestion question =
+    case question of
+        Question statement answers ->
+            div
+                []
+                [ div [] [ text statement ]
+                , div
+                    [ class "flex"
+                    , class "flex-col"
+                    , class "space-y-4"
+                    , class "mt-4"
+                    ]
+                    (List.map viewAnswer answers)
+                ]
+
+        Answered ->
+            div [] [ text "TO DO" ]
 
 
 viewAnswer : Answer -> Html Msg
 viewAnswer answer =
     case answer of
         Right str ->
-            div [] [ text str ]
+            div
+                [ class "p-2"
+                , class "bg-gray-100"
+                , class "text-gray-900"
+                , class "shadow-lg"
+                , onClick GotAnswer
+                ]
+                [ text str ]
 
         Wrong str ->
-            div [] [ text str ]
+            div
+                [ class "p-2"
+                , class "bg-gray-100"
+                , class "text-gray-900"
+                , class "shadow-lg"
+                , onClick GotAnswer
+                ]
+                [ text str ]
 
 
 viewButton : Html Msg
