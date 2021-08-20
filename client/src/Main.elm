@@ -92,13 +92,26 @@ view : Model -> Html Msg
 view model =
     case model of
         Success question ->
-            div []
-                [ viewButton
-                , viewQuestion question
-                ]
+            viewQuestion question
+                |> viewPage
 
         _ ->
             viewButton
+                |> viewPage
+
+
+viewPage : Html Msg -> Html Msg
+viewPage content =
+    div
+        [ class "bg-gray-200"
+        , class "h-screen"
+        , class "flex"
+        , class "flex-col"
+        , class "justify-center"
+        , class "items-center"
+        ]
+        [ content
+        ]
 
 
 viewQuestion : Question -> Html Msg
@@ -109,10 +122,13 @@ viewQuestion (Question str) =
 viewButton : Html Msg
 viewButton =
     div
-        [ class "bg-blue-200"
-        , class "rounded"
-        , class "p-2"
+        [ class "bg-green-500"
+        , class "text-white"
+        , class "uppercase"
+        , class "cursor-pointer"
+        , class "p-4"
+        , class "m-4"
         , onClick Clicked
         ]
-        [ text "Hello, Elm!"
+        [ text "Get question"
         ]
