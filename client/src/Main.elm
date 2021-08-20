@@ -5,7 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode exposing (Decoder, field, map, string)
+import Json.Decode exposing (Decoder, field, list, map, string)
 
 
 
@@ -38,12 +38,14 @@ init _ =
 
 
 type Question
-    = Question String
+    = Question String (List String)
 
 
 decoder : Decoder Question
 decoder =
-    Json.Decode.map Question (field "statement" string)
+    Json.Decode.map2 Question
+        (field "statement" string)
+        (field "answers" (Json.Decode.list string))
 
 
 
@@ -115,7 +117,15 @@ viewPage content =
 
 
 viewQuestion : Question -> Html Msg
-viewQuestion (Question str) =
+viewQuestion (Question statement answers) =
+    div []
+        [ div [] [ text statement ]
+        , div [] (List.map viewAnswer answers)
+        ]
+
+
+viewAnswer : String -> Html Msg
+viewAnswer str =
     div [] [ text str ]
 
 
