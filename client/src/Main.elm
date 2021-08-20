@@ -5,7 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode exposing (Decoder, field, list, map, string)
+import Json.Decode exposing (Decoder, field, list, map, oneOf, string)
 
 
 
@@ -38,14 +38,27 @@ init _ =
 
 
 type Question
-    = Question String (List String)
+    = Question String (List Answer)
+
+
+type Answer
+    = Right String
+    | Wrong String
 
 
 decoder : Decoder Question
 decoder =
     Json.Decode.map2 Question
         (field "statement" string)
-        (field "answers" (Json.Decode.list string))
+        (field "answers" (Json.Decode.list decoderAnswer))
+
+
+decoderAnswer : Decoder Answer
+decoderAnswer =
+    oneOf
+        [ Json.Decode.map Wrong (field "Wrong" string)
+        , Json.Decode.map Right (field "Right" string)
+        ]
 
 
 
@@ -124,9 +137,14 @@ viewQuestion (Question statement answers) =
         ]
 
 
-viewAnswer : String -> Html Msg
-viewAnswer str =
-    div [] [ text str ]
+viewAnswer : Answer -> Html Msg
+viewAnswer answer =
+    case answer of
+        Right str ->
+            div [] [ text str ]
+
+        Wrong str ->
+            div [] [ text str ]
 
 
 viewButton : Html Msg
