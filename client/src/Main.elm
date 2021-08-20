@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
+import Json.Decode exposing (Decoder, field, map, string)
 
 
 
@@ -27,7 +28,7 @@ main =
 type Model
     = NotStarted
     | Loading
-    | Success String
+    | Success Question
     | Failed
 
 
@@ -36,13 +37,22 @@ init _ =
     ( NotStarted, Cmd.none )
 
 
+type Question
+    = Question String
+
+
+decoder : Decoder Question
+decoder =
+    Json.Decode.map Question (field "statement" string)
+
+
 
 -- UPDATE
 
 
 type Msg
     = Clicked
-    | GotText (Result Http.Error String)
+    | GotQuestion (Result Http.Error Question)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -52,14 +62,14 @@ update msg model =
             ( Loading
             , Http.get
                 { url = "/api"
-                , expect = Http.expectString GotText
+                , expect = Http.expectJson GotQuestion decoder
                 }
             )
 
-        GotText result ->
+        GotQuestion result ->
             case result of
-                Ok text ->
-                    ( Success text, Cmd.none )
+                Ok question ->
+                    ( Success question, Cmd.none )
 
                 Err _ ->
                     ( Failed, Cmd.none )
@@ -81,14 +91,19 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     case model of
-        Success str ->
+        Success question ->
             div []
                 [ viewButton
-                , div [] [ text str ]
+                , viewQuestion question
                 ]
 
         _ ->
             viewButton
+
+
+viewQuestion : Question -> Html Msg
+viewQuestion (Question str) =
+    div [] [ text str ]
 
 
 viewButton : Html Msg
