@@ -1,7 +1,7 @@
 #[macro_use] extern crate rocket;
 
 
-use serde::Serialize;
+use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
 use rocket::fs::FileServer;
 
@@ -13,7 +13,7 @@ struct Question {
 }
 
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Answer {
     Right(String),
     Wrong(String)
@@ -33,8 +33,14 @@ fn question() -> Json<Question> {
     Json(question)
 }
 
+
+#[post("/answer", format = "application/json", data = "<data>")]
+fn answer(data: Json<Answer>) {
+    println!("{:?}", data.into_inner());
+}
+
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![question])
+    rocket::build().mount("/", routes![question, answer])
         .mount("/", FileServer::from("client/dist"))
 }
