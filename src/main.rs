@@ -6,17 +6,15 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 struct Score {
-    count: AtomicUsize,
-    database: Arc<Mutex<HashMap<usize, usize>>>,
+    database: Arc<Mutex<HashMap<Answer, usize>>>,
 }
 
 #[derive(Serialize)]
 struct Board {
-    score: usize,
+    score: HashMap<String, usize>,
 }
 
 #[derive(Serialize)]
@@ -25,10 +23,19 @@ struct Question {
     answers: Vec<Answer>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Debug, Clone)]
 enum Answer {
     Right(String),
     Wrong(String),
+}
+
+impl Answer {
+    fn as_string(a: &Answer) -> &String {
+        match a {
+            Answer::Right(s) => s,
+            Answer::Wrong(s) => s,
+        }
+    }
 }
 
 #[get("/api")]
@@ -45,26 +52,26 @@ fn question() -> Json<Question> {
 
 #[post("/answer", format = "application/json", data = "<data>")]
 fn answer(data: Json<Answer>, score: &State<Score>) -> Json<Board> {
-    println!("{:?}", data.into_inner());
-
-    let update = score.count.fetch_add(1, Ordering::Relaxed);
-
     // Update atomic reference counted mutex hash map
-    let key = 0;
+    let key = data.into_inner();
+    println!("{:?}", key);
     let default = 0;
     let s: &Score = score.inner();
     let mut hash_map = s.database.lock().unwrap();
     let ptr = hash_map.entry(key).or_insert(default);
     *ptr += 1;
-    println!("mutex: {:?}", hash_map);
 
-    Json(Board { score: update })
+    let mut results: HashMap<String, usize> = HashMap::new();
+    for (k, v) in hash_map.iter_mut() {
+        results.insert(Answer::as_string(&k).clone(), *v);
+    }
+    Json(Board { score: results })
 }
 
 #[launch]
 fn rocket() -> _ {
     // Data structures
-    let hash_map: HashMap<usize, usize> = HashMap::new();
+    let hash_map: HashMap<Answer, usize> = HashMap::new();
     let mutex = Arc::new(Mutex::new(hash_map));
 
     println!("main thread: {:?}", mutex);
@@ -73,8 +80,5 @@ fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![question, answer])
         .mount("/", FileServer::from("client/dist"))
-        .manage(Score {
-            count: AtomicUsize::new(0),
-            database: mutex,
-        })
+        .manage(Score { database: mutex })
 }
