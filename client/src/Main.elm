@@ -32,6 +32,8 @@ type Model
     | Loading
     | Success Question
     | Failed
+      -- TODO support response count
+    | ViewTally Tally
 
 
 init : () -> ( Model, Cmd Msg )
@@ -129,8 +131,7 @@ update msg model =
         GotTally result ->
             case result of
                 Ok tally ->
-                    -- TODO handle response from POST to /answer
-                    ( model, Cmd.none )
+                    ( ViewTally tally, Cmd.none )
 
                 Err _ ->
                     -- TODO handle error decoding response
@@ -155,6 +156,10 @@ view model =
     case model of
         Success question ->
             viewQuestion question
+                |> viewPage
+
+        ViewTally tally ->
+            viewTally tally
                 |> viewPage
 
         _ ->
@@ -236,4 +241,23 @@ viewButton =
         , onClick Clicked
         ]
         [ text "Get question"
+        ]
+
+
+viewTally : Tally -> Html Msg
+viewTally tally =
+    case tally of
+        Tally d ->
+            let
+                items =
+                    Dict.toList d
+            in
+            div [] (List.map viewKeyValue items)
+
+
+viewKeyValue : ( String, Int ) -> Html Msg
+viewKeyValue ( key, value ) =
+    div []
+        [ div [] [ text key ]
+        , div [] [ text (String.fromInt value) ]
         ]
