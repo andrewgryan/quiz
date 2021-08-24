@@ -1,11 +1,12 @@
 module Main exposing (main)
 
 import Browser
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode exposing (Decoder, field, list, map, oneOf, string)
+import Json.Decode exposing (Decoder, dict, field, int, list, map, oneOf, string)
 import Json.Encode
 
 
@@ -48,6 +49,15 @@ type Answer
     | Wrong String
 
 
+type Tally
+    = Tally (Dict String Int)
+
+
+decoderTally : Decoder Tally
+decoderTally =
+    Json.Decode.map Tally (field "count" (dict int))
+
+
 decoder : Decoder Question
 decoder =
     Json.Decode.map2 Question
@@ -85,7 +95,7 @@ type Msg
     = Clicked
     | GotQuestion (Result Http.Error Question)
     | GotAnswer Answer
-    | GotPostResponse (Result Http.Error String)
+    | GotTally (Result Http.Error Tally)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -112,13 +122,19 @@ update msg model =
             , Http.post
                 { url = "/answer"
                 , body = Http.jsonBody (encode answer)
-                , expect = Http.expectString GotPostResponse
+                , expect = Http.expectJson GotTally decoderTally
                 }
             )
 
-        GotPostResponse _ ->
-            -- TODO handle response from POST to /answer
-            ( model, Cmd.none )
+        GotTally result ->
+            case result of
+                Ok tally ->
+                    -- TODO handle response from POST to /answer
+                    ( model, Cmd.none )
+
+                Err _ ->
+                    -- TODO handle error decoding response
+                    ( model, Cmd.none )
 
 
 
