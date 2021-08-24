@@ -248,5 +248,42 @@ viewTally : Tally -> Html Msg
 viewTally tally =
     case tally of
         Tally answers ->
+            let
+                keyValues =
+                    aggregate answers
+                        |> Dict.toList
+            in
             -- TODO aggregate responses
-            div [] (List.map viewAnswer answers)
+            div [] (List.map viewKeyValue keyValues)
+
+
+viewKeyValue : ( String, Int ) -> Html Msg
+viewKeyValue ( key, count ) =
+    div [] [ text (key ++ ": " ++ String.fromInt count) ]
+
+
+aggregate : List Answer -> Dict String Int
+aggregate answers =
+    answers
+        |> List.map toString
+        |> List.foldr countKey Dict.empty
+
+
+toString : Answer -> String
+toString answer =
+    case answer of
+        Right str ->
+            str
+
+        Wrong str ->
+            str
+
+
+countKey : String -> Dict String Int -> Dict String Int
+countKey key records =
+    case Dict.get key records of
+        Nothing ->
+            Dict.insert key 0 records
+
+        Just count ->
+            Dict.insert key (count + 1) records
