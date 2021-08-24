@@ -8,13 +8,14 @@ use rocket::State;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-struct Score {
-    database: Arc<Mutex<HashMap<Answer, usize>>>,
+// Game state shared between threads
+struct Game {
+    responses: Arc<Mutex<HashMap<Answer, usize>>>,
 }
 
 #[derive(Serialize)]
-struct Board {
-    score: HashMap<String, usize>,
+struct Tally {
+    count: HashMap<String, usize>,
 }
 
 #[derive(Serialize)]
@@ -51,34 +52,34 @@ fn question() -> Json<Question> {
 }
 
 #[post("/answer", format = "application/json", data = "<data>")]
-fn answer(data: Json<Answer>, score: &State<Score>) -> Json<Board> {
+fn answer(data: Json<Answer>, game: &State<Game>) -> Json<Tally> {
     // Update atomic reference counted mutex hash map
     let key = data.into_inner();
-    println!("{:?}", key);
-    let default = 0;
-    let s: &Score = score.inner();
-    let mut hash_map = s.database.lock().unwrap();
-    let ptr = hash_map.entry(key).or_insert(default);
+    let default_count = 0;
+    let s: &Game = game.inner();
+    let mut hash_map = s.responses.lock().unwrap();
+    let ptr = hash_map.entry(key).or_insert(default_count);
     *ptr += 1;
 
+    // Copy hash map of results to return as JSON
+    // TODO: expose as an endpoint
     let mut results: HashMap<String, usize> = HashMap::new();
     for (k, v) in hash_map.iter_mut() {
         results.insert(Answer::as_string(&k).clone(), *v);
     }
-    Json(Board { score: results })
+    Json(Tally { count: results })
 }
 
 #[launch]
 fn rocket() -> _ {
-    // Data structures
+    // Game state
     let hash_map: HashMap<Answer, usize> = HashMap::new();
-    let mutex = Arc::new(Mutex::new(hash_map));
-
-    println!("main thread: {:?}", mutex);
+    let responses = Arc::new(Mutex::new(hash_map));
+    let game = Game { responses };
 
     // Rocket server entry point
     rocket::build()
         .mount("/", routes![question, answer])
         .mount("/", FileServer::from("client/dist"))
-        .manage(Score { database: mutex })
+        .manage(game)
 }
