@@ -283,7 +283,7 @@ countKey : String -> Dict String Int -> Dict String Int
 countKey key records =
     case Dict.get key records of
         Nothing ->
-            Dict.insert key 0 records
+            Dict.insert key 1 records
 
         Just count ->
             Dict.insert key (count + 1) records
