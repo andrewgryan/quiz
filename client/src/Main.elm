@@ -52,12 +52,12 @@ type Answer
 
 
 type Tally
-    = Tally (Dict String Int)
+    = Tally (List Answer)
 
 
 decoderTally : Decoder Tally
 decoderTally =
-    Json.Decode.map Tally (field "count" (dict int))
+    Json.Decode.map Tally (Json.Decode.list decoderAnswer)
 
 
 decoder : Decoder Question
@@ -247,17 +247,6 @@ viewButton =
 viewTally : Tally -> Html Msg
 viewTally tally =
     case tally of
-        Tally d ->
-            let
-                items =
-                    Dict.toList d
-            in
-            div [] (List.map viewKeyValue items)
-
-
-viewKeyValue : ( String, Int ) -> Html Msg
-viewKeyValue ( key, value ) =
-    div []
-        [ div [] [ text key ]
-        , div [] [ text (String.fromInt value) ]
-        ]
+        Tally answers ->
+            -- TODO aggregate responses
+            div [] (List.map viewAnswer answers)
