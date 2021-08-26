@@ -18,6 +18,12 @@
             Elm.Main.init({
                 node: document.getElementById("root")
             })
+
+            // Server-sent Events
+            const source = new EventSource("/events")
+            source.onmessage = ev => {
+                console.log(ev.data)
+            }
         </script>
     </body>
 </html>
