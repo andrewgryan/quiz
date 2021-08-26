@@ -27,7 +27,7 @@ main =
 -- PORTS
 
 
-port recv : (String -> msg) -> Sub msg
+port recv : (Json.Encode.Value -> msg) -> Sub msg
 
 
 
@@ -35,8 +35,9 @@ port recv : (String -> msg) -> Sub msg
 
 
 type alias Model =
-    { text : String
+    { answers : List Answer
     , player : Player
+    , error : Bool
     }
 
 
@@ -54,7 +55,8 @@ init _ =
     let
         model =
             { player = NotStarted
-            , text = ""
+            , answers = []
+            , error = False
             }
     in
     ( model, Cmd.none )
@@ -84,6 +86,11 @@ decoder =
     Json.Decode.map2 Question
         (field "statement" string)
         (field "answers" (Json.Decode.list decoderAnswer))
+
+
+decoderAnswers : Decoder (List Answer)
+decoderAnswers =
+    field "answers" (Json.Decode.list decoderAnswer)
 
 
 decoderAnswer : Decoder Answer
@@ -117,7 +124,7 @@ type Msg
     | GotQuestion (Result Http.Error Question)
     | GotAnswer Answer
     | GotTally (Result Http.Error Tally)
-    | Recv String
+    | Recv Json.Encode.Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -157,8 +164,14 @@ update msg model =
                     -- TODO handle error decoding response
                     ( model, Cmd.none )
 
-        Recv str ->
-            ( { model | text = str }, Cmd.none )
+        Recv value ->
+            case Json.Decode.decodeValue decoderAnswers value of
+                Ok answers ->
+                    ( { model | answers = answers }, Cmd.none )
+
+                Err _ ->
+                    -- TODO handle error
+                    ( { model | error = True }, Cmd.none )
 
 
 
@@ -184,13 +197,23 @@ view model =
         ViewTally tally ->
             div []
                 [ viewTally tally
-                , div [] [ text model.text ]
+                , div [] (List.map viewAnswer model.answers)
+                , viewError model.error
                 ]
                 |> viewPage
 
         _ ->
             viewButton
                 |> viewPage
+
+
+viewError : Bool -> Html Msg
+viewError flag =
+    if flag then
+        div [] [ text "ERROR" ]
+
+    else
+        text ""
 
 
 viewPage : Html Msg -> Html Msg

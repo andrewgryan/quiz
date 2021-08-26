@@ -23,7 +23,7 @@
             const source = new EventSource("/events")
             source.onmessage = ev => {
                 console.log(ev.data)
-                app.ports.recv.send(ev.data)
+                app.ports.recv.send(JSON.parse(ev.data))
             }
         </script>
     </body>
