@@ -44,9 +44,7 @@ type alias Model =
 
 type Player
     = Playing
-    | Answered
-      -- TODO support response count
-    | ViewTally Tally
+    | Answered Answer
 
 
 type Remote a
@@ -153,7 +151,7 @@ update msg model =
                     ( { model | question = Failed }, Cmd.none )
 
         GotAnswer answer ->
-            ( { model | player = Answered }
+            ( { model | player = Answered answer }
             , Http.post
                 { url = "/answer"
                 , body = Http.jsonBody (encode answer)
@@ -164,7 +162,7 @@ update msg model =
         GotTally result ->
             case result of
                 Ok tally ->
-                    ( { model | player = ViewTally tally }, Cmd.none )
+                    ( model, Cmd.none )
 
                 Err _ ->
                     -- TODO handle error decoding response
@@ -206,22 +204,22 @@ view model =
                     viewButton
                         |> viewPage
 
-        ViewTally _ ->
+        Answered answer ->
             case model.question of
                 Success question ->
                     let
                         s =
                             summary question model.answers
                     in
-                    viewSummary s
+                    div []
+                        [ viewSummary s
+                        , viewAnswer answer
+                        ]
                         |> viewPage
 
                 _ ->
                     viewButton
                         |> viewPage
-
-        Answered ->
-            div [] [ text "TO DO" ]
 
 
 viewError : Bool -> Html Msg
@@ -305,24 +303,6 @@ viewButton =
         ]
         [ text "Get question"
         ]
-
-
-viewTally : Tally -> Html Msg
-viewTally tally =
-    case tally of
-        Tally answers ->
-            let
-                keyValues =
-                    aggregate answers
-                        |> Dict.toList
-            in
-            -- TODO aggregate responses
-            div [] (List.map viewKeyValue keyValues)
-
-
-viewKeyValue : ( String, Int ) -> Html Msg
-viewKeyValue ( key, count ) =
-    div [] [ text (key ++ ": " ++ String.fromInt count) ]
 
 
 type Counted a
