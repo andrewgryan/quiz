@@ -335,18 +335,49 @@ type Summary
 
 viewSummary : Summary -> Html Msg
 viewSummary (Summary statement countedAnswers) =
-    div []
+    div
+        [ class "flex"
+        , class "flex-col"
+        , class "space-y-2"
+        ]
         [ div [] [ text statement ]
-        , div [] (List.map viewCounted countedAnswers)
+        , div
+            [ class "flex"
+            , class "flex-col"
+            , class "space-y-2"
+            ]
+            (List.map viewCounted countedAnswers)
         ]
 
 
 viewCounted : Counted Answer -> Html Msg
 viewCounted (Counted n answer) =
-    div []
-        [ div [] [ text (String.fromInt n) ]
-        , viewAnswer answer
-        ]
+    case answer of
+        Right str ->
+            div
+                [ class "bg-green-200"
+                , class "flex"
+                , class "flex-row"
+                , class "justify-between"
+                , class "shadow-lg"
+                , class "p-2"
+                ]
+                [ div [] [ text str ]
+                , div [] [ text (String.fromInt n) ]
+                ]
+
+        Wrong str ->
+            div
+                [ class "bg-red-200"
+                , class "flex"
+                , class "flex-row"
+                , class "justify-between"
+                , class "shadow-lg"
+                , class "p-2"
+                ]
+                [ div [] [ text str ]
+                , div [] [ text (String.fromInt n) ]
+                ]
 
 
 summary : Question -> List Answer -> Summary
