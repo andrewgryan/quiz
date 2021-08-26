@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Browser
 import Dict exposing (Dict)
@@ -24,10 +24,23 @@ main =
 
 
 
+-- PORTS
+
+
+port recv : (String -> msg) -> Sub msg
+
+
+
 -- MODEL
 
 
-type Model
+type alias Model =
+    { text : String
+    , player : Player
+    }
+
+
+type Player
     = NotStarted
     | Loading
     | Success Question
@@ -38,7 +51,13 @@ type Model
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( NotStarted, Cmd.none )
+    let
+        model =
+            { player = NotStarted
+            , text = ""
+            }
+    in
+    ( model, Cmd.none )
 
 
 type Question
@@ -98,13 +117,14 @@ type Msg
     | GotQuestion (Result Http.Error Question)
     | GotAnswer Answer
     | GotTally (Result Http.Error Tally)
+    | Recv String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Clicked ->
-            ( Loading
+            ( { model | player = Loading }
             , Http.get
                 { url = "/api"
                 , expect = Http.expectJson GotQuestion decoder
@@ -114,13 +134,13 @@ update msg model =
         GotQuestion result ->
             case result of
                 Ok question ->
-                    ( Success question, Cmd.none )
+                    ( { model | player = Success question }, Cmd.none )
 
                 Err _ ->
-                    ( Failed, Cmd.none )
+                    ( { model | player = Failed }, Cmd.none )
 
         GotAnswer answer ->
-            ( Success Answered
+            ( { model | player = Success Answered }
             , Http.post
                 { url = "/answer"
                 , body = Http.jsonBody (encode answer)
@@ -131,11 +151,14 @@ update msg model =
         GotTally result ->
             case result of
                 Ok tally ->
-                    ( ViewTally tally, Cmd.none )
+                    ( { model | player = ViewTally tally }, Cmd.none )
 
                 Err _ ->
                     -- TODO handle error decoding response
                     ( model, Cmd.none )
+
+        Recv str ->
+            ( { model | text = str }, Cmd.none )
 
 
 
@@ -144,7 +167,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    recv Recv
 
 
 
@@ -153,13 +176,16 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    case model of
+    case model.player of
         Success question ->
             viewQuestion question
                 |> viewPage
 
         ViewTally tally ->
-            viewTally tally
+            div []
+                [ viewTally tally
+                , div [] [ text model.text ]
+                ]
                 |> viewPage
 
         _ ->

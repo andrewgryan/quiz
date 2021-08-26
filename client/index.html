@@ -15,7 +15,7 @@
 
             // Elm
             import { Elm } from "./src/Main.elm"
-            Elm.Main.init({
+            const app = Elm.Main.init({
                 node: document.getElementById("root")
             })
 
@@ -23,6 +23,7 @@
             const source = new EventSource("/events")
             source.onmessage = ev => {
                 console.log(ev.data)
+                app.ports.recv.send(ev.data)
             }
         </script>
     </body>
