@@ -36,26 +36,33 @@ port recv : (Json.Encode.Value -> msg) -> Sub msg
 
 type alias Model =
     { answers : List Answer
+    , question : Remote Question
     , player : Player
     , error : Bool
     }
 
 
 type Player
-    = NotStarted
-    | Loading
-    | Success Question
-    | Failed
+    = Playing
+    | Answered
       -- TODO support response count
     | ViewTally Tally
+
+
+type Remote a
+    = NotStarted
+    | Loading
+    | Success a
+    | Failed
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     let
         model =
-            { player = NotStarted
+            { player = Playing
             , answers = []
+            , question = NotStarted
             , error = False
             }
     in
@@ -64,7 +71,6 @@ init _ =
 
 type Question
     = Question String (List Answer)
-    | Answered
 
 
 type Answer
@@ -131,7 +137,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Clicked ->
-            ( { model | player = Loading }
+            ( { model | question = Loading }
             , Http.get
                 { url = "/api"
                 , expect = Http.expectJson GotQuestion decoder
@@ -141,13 +147,13 @@ update msg model =
         GotQuestion result ->
             case result of
                 Ok question ->
-                    ( { model | player = Success question }, Cmd.none )
+                    ( { model | question = Success question }, Cmd.none )
 
                 Err _ ->
-                    ( { model | player = Failed }, Cmd.none )
+                    ( { model | question = Failed }, Cmd.none )
 
         GotAnswer answer ->
-            ( { model | player = Success Answered }
+            ( { model | player = Answered }
             , Http.post
                 { url = "/answer"
                 , body = Http.jsonBody (encode answer)
@@ -190,17 +196,32 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     case model.player of
-        Success question ->
-            viewQuestion question
-                |> viewPage
+        Playing ->
+            case model.question of
+                Success question ->
+                    viewQuestion question
+                        |> viewPage
+
+                _ ->
+                    viewButton
+                        |> viewPage
 
         ViewTally _ ->
-            viewTally (Tally model.answers)
-                |> viewPage
+            case model.question of
+                Success question ->
+                    let
+                        s =
+                            summary question model.answers
+                    in
+                    viewSummary s
+                        |> viewPage
 
-        _ ->
-            viewButton
-                |> viewPage
+                _ ->
+                    viewButton
+                        |> viewPage
+
+        Answered ->
+            div [] [ text "TO DO" ]
 
 
 viewError : Bool -> Html Msg
@@ -241,9 +262,6 @@ viewQuestion question =
                     ]
                     (List.map viewAnswer answers)
                 ]
-
-        Answered ->
-            div [] [ text "TO DO" ]
 
 
 viewAnswer : Answer -> Html Msg
@@ -305,6 +323,47 @@ viewTally tally =
 viewKeyValue : ( String, Int ) -> Html Msg
 viewKeyValue ( key, count ) =
     div [] [ text (key ++ ": " ++ String.fromInt count) ]
+
+
+type Counted a
+    = Counted Int a
+
+
+type Summary
+    = Summary String (List (Counted Answer))
+
+
+viewSummary : Summary -> Html Msg
+viewSummary (Summary statement countedAnswers) =
+    div []
+        [ div [] [ text statement ]
+        , div [] (List.map viewCounted countedAnswers)
+        ]
+
+
+viewCounted : Counted Answer -> Html Msg
+viewCounted (Counted n answer) =
+    div []
+        [ div [] [ text (String.fromInt n) ]
+        , viewAnswer answer
+        ]
+
+
+summary : Question -> List Answer -> Summary
+summary question responses =
+    let
+        toFreq =
+            \a -> Counted (frequency responses a) a
+    in
+    case question of
+        Question statement answers ->
+            Summary statement (List.map toFreq answers)
+
+
+frequency : List Answer -> Answer -> Int
+frequency answers answer =
+    List.filter (\a -> a == answer) answers
+        |> List.length
 
 
 aggregate : List Answer -> Dict String Int
