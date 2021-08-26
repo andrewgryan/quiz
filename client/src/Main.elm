@@ -194,12 +194,8 @@ view model =
             viewQuestion question
                 |> viewPage
 
-        ViewTally tally ->
-            div []
-                [ viewTally tally
-                , div [] (List.map viewAnswer model.answers)
-                , viewError model.error
-                ]
+        ViewTally _ ->
+            viewTally (Tally model.answers)
                 |> viewPage
 
         _ ->
