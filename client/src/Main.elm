@@ -193,20 +193,14 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    case model.player of
-        Playing ->
-            case model.question of
-                Success question ->
+    case model.question of
+        Success question ->
+            case model.player of
+                Playing ->
                     viewQuestion question
                         |> viewPage
 
-                _ ->
-                    viewButton
-                        |> viewPage
-
-        Answered answer ->
-            case model.question of
-                Success question ->
+                Answered answer ->
                     let
                         s =
                             summary question model.answers
@@ -217,9 +211,19 @@ view model =
                         ]
                         |> viewPage
 
-                _ ->
-                    viewButton
-                        |> viewPage
+        _ ->
+            div
+                [ class "flex"
+                , class "flex-col"
+                , class "space-y-8"
+                ]
+                [ div
+                    [ class "text-2xl"
+                    ]
+                    [ text "Hello, World!" ]
+                , viewButton
+                ]
+                |> viewPage
 
 
 viewError : Bool -> Html Msg
@@ -298,7 +302,6 @@ viewButton =
         , class "uppercase"
         , class "cursor-pointer"
         , class "p-4"
-        , class "m-4"
         , onClick Clicked
         ]
         [ text "Get question"
