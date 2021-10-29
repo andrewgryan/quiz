@@ -36,7 +36,7 @@ port recv : (Json.Encode.Value -> msg) -> Sub msg
 
 type alias Model =
     { answers : List Answer
-    , question : Remote Question
+    , questions : Remote (List Question)
     , player : Player
     , error : Bool
     }
@@ -60,7 +60,7 @@ init _ =
         model =
             { player = Playing
             , answers = []
-            , question = NotStarted
+            , questions = NotStarted
             , error = False
             }
     in
@@ -83,6 +83,11 @@ type Tally
 decoderTally : Decoder Tally
 decoderTally =
     Json.Decode.map Tally (Json.Decode.list decoderAnswer)
+
+
+decodeQuestions : Decoder (List Question)
+decodeQuestions =
+    Json.Decode.list decoder
 
 
 decoder : Decoder Question
@@ -125,7 +130,7 @@ encode answer =
 
 type Msg
     = Clicked
-    | GotQuestion (Result Http.Error Question)
+    | GotQuestions (Result Http.Error (List Question))
     | GotAnswer Answer
     | GotTally (Result Http.Error Tally)
     | Recv Json.Encode.Value
@@ -135,20 +140,20 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Clicked ->
-            ( { model | question = Loading }
+            ( { model | questions = Loading }
             , Http.get
                 { url = "/api"
-                , expect = Http.expectJson GotQuestion decoder
+                , expect = Http.expectJson GotQuestions decodeQuestions
                 }
             )
 
-        GotQuestion result ->
+        GotQuestions result ->
             case result of
-                Ok question ->
-                    ( { model | question = Success question }, Cmd.none )
+                Ok questions ->
+                    ( { model | questions = Success questions }, Cmd.none )
 
                 Err _ ->
-                    ( { model | question = Failed }, Cmd.none )
+                    ( { model | questions = Failed }, Cmd.none )
 
         GotAnswer answer ->
             ( { model | player = Answered answer }
@@ -193,22 +198,20 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    case model.question of
-        Success question ->
+    case model.questions of
+        Success questions ->
             case model.player of
                 Playing ->
-                    viewQuestion question
+                    div [] (List.map viewQuestion questions)
                         |> viewPage
 
                 Answered answer ->
                     let
-                        s =
-                            summary question model.answers
+                        summaries =
+                            List.map (\q -> summary q model.answers) questions
                     in
                     div []
-                        [ viewSummary s
-                        , viewAnswer answer
-                        ]
+                        (List.map viewSummary summaries)
                         |> viewPage
 
         _ ->

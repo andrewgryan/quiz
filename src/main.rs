@@ -28,7 +28,7 @@ enum Answer {
 }
 
 #[get("/api")]
-fn question() -> Json<Question> {
+fn question() -> Json<Vec<Question>> {
     let statement = String::from("How tall is the Eiffel Tower?");
     let answers = vec![
         Answer::Wrong(String::from("100m")),
@@ -36,7 +36,7 @@ fn question() -> Json<Question> {
         Answer::Wrong(String::from("900m")),
     ];
     let question = Question { statement, answers };
-    Json(question)
+    Json(vec![question])
 }
 
 #[post("/answer", format = "application/json", data = "<data>")]
