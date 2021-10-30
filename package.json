@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite build --watch"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,16 @@
   "devDependencies": {
     "autoprefixer": "^10.3.1",
     "elm": "^0.19.1-5",
+    "eslint": "^7.32.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1",
+    "eslint-plugin-react": "^7.26.1",
     "postcss": "^8.3.6",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "tailwind-heropatterns": "^0.0.8",
     "tailwindcss": "^2.2.7",
     "vite": "^2.5.0",
     "vite-plugin-elm": "^2.4.2"
