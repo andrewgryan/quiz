@@ -18,6 +18,7 @@ module.exports = {
             colors: {
                 default: "#9C92AC"
             }
-        })
+        }),
+        require("@tailwindcss/forms")
     ],
 }
