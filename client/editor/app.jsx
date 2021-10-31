@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import ReactDOM from "react-dom"
 import {
     BeakerIcon,
@@ -8,6 +8,7 @@ import {
     BadgeCheckIcon,
     XCircleIcon,
 } from "@heroicons/react/solid"
+import { Listbox } from "@headlessui/react"
 
 console.log(React, ReactDOM)
 
@@ -55,6 +56,13 @@ const App = () => {
                                 <TrashIcon className="h-5 w-5" />
                             </div>
                         </div>
+                        <div className="flex flex-row items-center space-x-1">
+                            <EditAnswer />
+                            <input className="mt-1 flex-grow bg-gray-700" type="text" />
+                            <div className="px-2 hover:opacity-75 cursor-pointer">
+                                <TrashIcon className="h-5 w-5" />
+                            </div>
+                        </div>
                         <div className="flex flex-row justify-center space-x-1 py-2 items-center">
                             <div className="px-2 hover:opacity-75 cursor-pointer">
                                 <MinusCircleIcon className="h-5 w-5" />
@@ -74,5 +82,28 @@ const App = () => {
         </div>
     )
 }
+
+const EditAnswer = () => {
+    const icons = [
+        <div key={ 0 } className="px-2 hover:opacity-75 cursor-pointer text-red-300">
+            <XCircleIcon className="h-5 w-5" />
+        </div>,
+        <div key={ 1 } className="px-2 hover:opacity-75 cursor-pointer text-green-300">
+            <BadgeCheckIcon className="h-5 w-5" />
+        </div>
+    ]
+    const choices = [ 0, 1 ]
+    const [ index, setIndex ] = useState(0)
+    return (
+        <Listbox as="div" value={ index } onChange={ setIndex } className="relative">
+            <Listbox.Button>{ icons[index] }</Listbox.Button>
+            <Listbox.Options className="absolute bg-gray-700 border border-gray-600 py-2 rounded flex flex-col space-y-1">{ choices.map((_, idx) => {
+                return (
+                    <Listbox.Option value={ idx } key={ idx }>{ icons[idx] }</Listbox.Option>
+                )
+            }) }</Listbox.Options>
+        </Listbox>)
+}
+
 
 ReactDOM.render(<App />, document.getElementById("react-app"))
